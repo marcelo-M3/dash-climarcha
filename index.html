@@ -221,6 +221,7 @@ table.dt td.obs-cell{padding:4px;}
       <button class="nav-item" onclick="nav('leads',this)"><i class="ti ti-users"></i>Leads &amp; Vendas</button>
       <button class="nav-item" onclick="nav('anual',this)"><i class="ti ti-chart-bar"></i>Debriefing anual</button>
       <button class="nav-item" onclick="nav('metas',this)"><i class="ti ti-target"></i>Metas</button>
+      <button class="nav-item" onclick="nav('criativos',this)"><i class="ti ti-palette"></i>Criativos</button>
     </div>
     <div class="sidebar-footer">
       <button class="theme-toggle" onclick="toggleTema()">
@@ -340,6 +341,25 @@ table.dt td.obs-cell{padding:4px;}
         </div>
       </div>
       <div id="ct-metas"><div class="empty"><i class="ti ti-plug-off"></i><p>Conecte a planilha para ver os dados.</p></div></div>
+    </div>
+    <!-- CRIATIVOS -->
+    <div class="page" id="pg-criativos">
+      <div class="topbar">
+        <div><div class="eyebrow">Dashboard / Criativos</div><div class="page-title">Análise de criativos</div>
+        <div class="page-sub">CPL, investimento e leads por criativo — Meta Ads e Google Ads.</div></div>
+        <div class="ctrls">
+          <div class="cg"><label>Período</label>
+            <select id="cri-mes-sel" onchange="renderCriativos()">
+              <option value="-1">Todo o período</option>
+              <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+              <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+              <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+              <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="ct-criativos"><div class="empty"><i class="ti ti-plug-off"></i><p>Conecte a planilha para ver os dados.</p></div></div>
     </div>
   </div>
 </div>
