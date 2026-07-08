@@ -155,6 +155,32 @@ table.dt td.obs-cell{padding:4px;}
 .ak{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px var(--shadow);}
 .al{font-size:11px;color:var(--muted);margin-bottom:5px;}.av{font-size:20px;font-weight:700;}
 
+/* COMERCIAL KPIs */
+.com-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.com-kpi{background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:14px 12px;}
+.com-kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.com-kpi-value{font-size:20px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px;}
+.com-kpi-value.green{color:var(--green)}.com-kpi-value.red{color:var(--red)}.com-kpi-value.amber{color:var(--yellow)}.com-kpi-value.cyan{color:#22d3ee}
+.com-kpi-sub{font-size:11px;color:var(--muted);}
+.com-comp{font-size:11px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+
+/* FUNIL COMERCIAL */
+.com-funil{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.com-funil-step{display:grid;grid-template-columns:160px 1fr 80px 100px;gap:12px;align-items:center;}
+.com-funil-label{font-size:12px;color:var(--muted);}
+.com-funil-bar-wrap{height:26px;background:var(--card2);border-radius:6px;overflow:hidden;}
+.com-funil-bar{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:10px;transition:width .4s;}
+.com-funil-num{font-size:13px;font-weight:700;color:var(--txt);text-align:right;}
+.com-funil-pct{font-size:11px;color:var(--muted);text-align:right;}
+
+/* INPUTS COMERCIAL */
+.com-edit-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr);}
+.com-edit-row:last-child{border-bottom:none;}
+.com-edit-label{font-size:12px;color:var(--muted);flex:1;}
+.com-edit-input{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;color:var(--txt);font-size:13px;font-family:inherit;width:130px;text-align:right;outline:none;}
+.com-edit-input:focus{border-color:var(--blue);}
+.com-edit-input.changed{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.05);}
+
 /* EMPTY */
 .empty{text-align:center;padding:70px 20px;color:var(--muted);}
 .empty i{font-size:44px;margin-bottom:14px;display:block;opacity:.18;}
@@ -233,9 +259,38 @@ table.dt td.obs-cell{padding:4px;}
 
     <!-- LEADS -->
     <div class="page" id="pg-leads">
-      <div class="eyebrow">Dashboard / Comercial</div>
-      <div class="page-title">Leads &amp; Vendas</div>
-      <div class="page-sub">Edite os valores diretamente na tabela e exporte para colar no Sheets.</div>
+      <div class="topbar">
+        <div><div class="eyebrow">Dashboard / Comercial</div><div class="page-title">Leads &amp; Vendas</div>
+        <div class="page-sub">Métricas comerciais, funil e registros diários.</div></div>
+        <div class="ctrls">
+          <div class="cg"><label>Mês</label>
+            <select id="lv-mes-sel" onchange="renderLeads()">
+              <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+              <option value="3">Abril</option><option value="4">Maio</option><option value="5" selected>Junho</option>
+              <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+              <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+            </select>
+          </div>
+          <button class="btn-outline" onclick="toggleEditComercial()" id="btn-edit-com" style="display:flex;align-items:center;gap:6px;">
+            <i class="ti ti-pencil" style="font-size:14px"></i> Editar faturamento
+          </button>
+        </div>
+      </div>
+
+      <!-- PAINEL EDIÇÃO FATURAMENTO -->
+      <div id="painel-comercial" style="display:none;margin-bottom:16px;">
+        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <div><div class="ct">Faturamento e Ticket Médio</div><div class="cs" style="margin-bottom:0">Salvo no navegador. ROI e demais métricas são calculados automaticamente.</div></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-outline" onclick="limparComercial()"><i class="ti ti-trash" style="font-size:13px"></i> Limpar</button>
+              <button class="btn-primary" onclick="salvarComercial()"><i class="ti ti-check" style="font-size:13px"></i> Salvar</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="com-edit-grid"></div>
+        </div>
+      </div>
+
       <div id="ct-leads"><div class="empty"><i class="ti ti-plug-off"></i><p>Conecte a planilha para ver os dados.</p></div></div>
     </div>
 
@@ -482,58 +537,161 @@ function limparEdits() {
   toast('Edições locais apagadas.','ok');
 }
 
+// ── COMERCIAL LOCAL STORAGE ──────────────────────────────────
+var COM_KEY = 'marcha_comercial_v1';
+var MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function getComercialData() {
+  try { return JSON.parse(localStorage.getItem(COM_KEY)||'{}'); } catch(e) { return {}; }
+}
+function saveComercialData(obj) {
+  localStorage.setItem(COM_KEY, JSON.stringify(obj));
+}
+function toggleEditComercial() {
+  var p = document.getElementById('painel-comercial');
+  var aberto = p.style.display !== 'none';
+  p.style.display = aberto ? 'none' : 'block';
+  if (!aberto) buildComercialEditGrid();
+}
+function buildComercialEditGrid() {
+  var com = getComercialData();
+  var h = '';
+  MESES.forEach(function(mes, i) {
+    var key = 'mes_'+i;
+    var d = com[key] || {fat:0, ticket:0};
+    h += '<div>';
+    h += '<div style="font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">'+mes+'</div>';
+    h += '<div class="com-edit-row"><span class="com-edit-label">Faturamento (R$)</span><input class="com-edit-input" id="com-fat-'+i+'" type="number" min="0" value="'+(d.fat||0)+'"></div>';
+    h += '<div class="com-edit-row"><span class="com-edit-label">Ticket médio (R$)</span><input class="com-edit-input" id="com-ticket-'+i+'" type="number" min="0" value="'+(d.ticket||0)+'"></div>';
+    h += '</div>';
+  });
+  document.getElementById('com-edit-grid').innerHTML = h;
+}
+function salvarComercial() {
+  var com = {};
+  MESES.forEach(function(_, i) {
+    com['mes_'+i] = {
+      fat:    parseFloat(document.getElementById('com-fat-'+i).value)    || 0,
+      ticket: parseFloat(document.getElementById('com-ticket-'+i).value) || 0,
+    };
+  });
+  saveComercialData(com);
+  document.getElementById('painel-comercial').style.display = 'none';
+  renderLeads();
+  toast('Dados comerciais salvos!', 'ok');
+}
+function limparComercial() {
+  if (!confirm('Apagar todos os dados de faturamento salvos?')) return;
+  localStorage.removeItem(COM_KEY);
+  buildComercialEditGrid();
+  toast('Dados comerciais apagados.', 'ok');
+}
+
 // ── RENDER LEADS & VENDAS (editável) ─────────────────────────
 function renderLeads() {
   if (!dados||!dados.leadsVendas) return;
   var lv = getLVMerged();
-  var tL=soma(lv,'Leads'), tLQ=soma(lv,['Leads qualificados','Qualificados']);
-  var tRA=soma(lv,['Reuniões agendadas','Reunioes agendadas']), tRR=soma(lv,['Reuniões feitas','Reunioes feitas','Reuniões realizadas']), tV=soma(lv,'Vendas');
-  var temEdits = Object.keys(lvEdits).length > 0;
+  // Mês selecionado
+  var mesEl = document.getElementById('lv-mes-sel');
+  var mesIdx = mesEl ? parseInt(mesEl.value) : 5;
+  var mesAnterior = mesIdx > 0 ? mesIdx - 1 : -1;
 
-  var h = '<div class="kpi-row">';
-  h += kc('b','','Total de leads',tL,'Período completo','');
-  h += kc('g','','Qualificados',tLQ,tL>0?pct(tLQ/tL*100)+' do total':'—','');
-  h += kc('y','','Reuniões feitas',tRR,tRA+' agendadas','');
-  h += kc('r','','Vendas',tV,tRR>0?pct(tV/tRR*100)+' de fechamento':'—','');
+  var lvMes  = lv.filter(function(r){ return getMes(String(r.Data||''))===mesIdx; });
+  var lvAnt  = mesAnterior>=0 ? lv.filter(function(r){ return getMes(String(r.Data||''))===mesAnterior; }) : [];
+
+  var metaMes   = (dados.meta||[]).filter(function(r){ return getMes(String(r.Data||''))===mesIdx; });
+  var googleMes = (dados.google||[]).filter(function(r){ return getMes(String(r.Data||''))===mesIdx; });
+  var metaAnt   = mesAnterior>=0 ? (dados.meta||[]).filter(function(r){ return getMes(String(r.Data||''))===mesAnterior; }) : [];
+  var googleAnt = mesAnterior>=0 ? (dados.google||[]).filter(function(r){ return getMes(String(r.Data||''))===mesAnterior; }) : [];
+
+  var inv  = soma(metaMes,['Valor gasto','Investimento'])+soma(googleMes,['Valor gasto','Investimento']);
+  var invA = soma(metaAnt,['Valor gasto','Investimento'])+soma(googleAnt,['Valor gasto','Investimento']);
+  var tL=soma(metaMes,'Leads')+soma(googleMes,'Leads'), tLA=soma(metaAnt,'Leads')+soma(googleAnt,'Leads');
+  var tLQ=soma(lvMes,['Leads qualificados','Qualificados']), tLQA=soma(lvAnt,['Leads qualificados','Qualificados']);
+  var tRA=soma(lvMes,['Reunioes agendadas','Reuniões agendadas']), tRAA=soma(lvAnt,['Reunioes agendadas','Reuniões agendadas']);
+  var tRR=soma(lvMes,['Reuniões feitas','Reunioes feitas','Reuniões realizadas']), tRRA=soma(lvAnt,['Reuniões feitas','Reunioes feitas','Reuniões realizadas']);
+  var tV=soma(lvMes,'Vendas'), tVA=soma(lvAnt,'Vendas');
+
+  var comData = getComercialData();
+  var comMes = comData['mes_'+mesIdx]||{fat:0,ticket:0};
+  var comAnt = comData['mes_'+mesAnterior]||{fat:0,ticket:0};
+  var fat=comMes.fat, fatA=comAnt.fat, ticket=comMes.ticket, ticketA=comAnt.ticket;
+
+  var cpl=tL>0?inv/tL:0, cplA=tLA>0?invA/tLA:0;
+  var cpv=tV>0?inv/tV:0, cpvA=tVA>0?invA/tVA:0;
+  var roi=inv>0?fat/inv:0, roiA=invA>0?fatA/invA:0;
+  var pctConv=tRR>0?tV/tRR*100:0, pctConvA=tRRA>0?tVA/tRRA*100:0;
+  var pctComp=tRA>0?tRR/tRA*100:0, pctCompA=tRAA>0?tRRA/tRAA*100:0;
+
+  var nomeMesAnt = mesAnterior>=0 ? MESES_ABREV[mesAnterior] : '';
+
+  function delta(curr, prev, invertido) {
+    if (mesAnterior<0||!prev) return '—';
+    var p=(curr-prev)/prev*100;
+    var bom=invertido?p<0:p>0;
+    var seta=p>0?'▲':(p<0?'▼':'—');
+    var cor=p===0?'var(--muted)':(bom?'var(--green)':'var(--red)');
+    return '<span style="color:'+cor+'">'+seta+' '+Math.abs(p).toFixed(1)+'%</span> vs '+nomeMesAnt;
+  }
+
+  var h = '';
+  if (nomeMesAnt) h += '<div class="com-comp"><i class="ti ti-arrows-exchange" style="font-size:13px"></i> comparando com '+nomeMesAnt+'</div>';
+
+  h += '<div class="com-kpi-grid">';
+  [
+    {l:'Faturamento',     v:brl(fat),                  sub:delta(fat,fatA,false),          c:'green'},
+    {l:'Vendas',          v:tV,                        sub:delta(tV,tVA,false),             c:''},
+    {l:'ROI',             v:roi>0?roi.toFixed(2):'—',  sub:delta(roi,roiA,false),           c:'red'},
+    {l:'Ticket médio',    v:ticket>0?brl(ticket):'—',  sub:delta(ticket,ticketA,false),     c:''},
+    {l:'Custo por venda', v:cpv>0?brl(cpv):'—',        sub:delta(cpv,cpvA,true),            c:'amber'},
+    {l:'Investimento',    v:brl(inv),                  sub:delta(inv,invA,true),             c:'cyan'},
+    {l:'Leads totais',    v:tL,                        sub:delta(tL,tLA,false),              c:''},
+    {l:'Custo por lead',  v:cpl>0?brl(cpl):'—',        sub:delta(cpl,cplA,true),            c:''},
+    {l:'Reun. agendadas', v:tRA,                       sub:delta(tRA,tRAA,false),            c:''},
+    {l:'Reun. realizadas',v:tRR,                       sub:delta(tRR,tRRA,false),            c:''},
+    {l:'% Conversão',     v:pctConv>0?pct(pctConv):'—',sub:delta(pctConv,pctConvA,false),  c:'red'},
+    {l:'% Comparecimento',v:pctComp>0?pct(pctComp):'—',sub:delta(pctComp,pctCompA,false),  c:'green'},
+  ].forEach(function(k){
+    h += '<div class="com-kpi"><div class="com-kpi-label">'+k.l+'</div><div class="com-kpi-value '+k.c+'">'+k.v+'</div><div class="com-kpi-sub">'+k.sub+'</div></div>';
+  });
   h += '</div>';
 
-  h += '<div class="tc">';
-  h += '<div class="tc-header">';
-  h += '<div class="tc-header-left"><div class="ct">Registros do período</div><div class="edit-hint"><i class="ti ti-pencil" style="font-size:12px"></i> Clique em qualquer valor para editar</div></div>';
-  h += '<div class="tc-actions">';
-  if (temEdits) h += '<button class="btn-outline" onclick="limparEdits()"><i class="ti ti-trash" style="font-size:13px"></i> Limpar edições</button>';
-  h += '<button class="btn-primary" onclick="exportarTSV()"><i class="ti ti-copy" style="font-size:13px"></i> Copiar para Sheets</button>';
+  // Funil visual
+  h += '<div class="cc full" style="margin-bottom:14px;"><div class="ct" style="margin-bottom:4px">Funil do mês — lead até venda</div><div class="cs" style="margin-bottom:14px">'+MESES[mesIdx]+'</div><div class="com-funil">';
+  var funil=[{l:'Leads totais',v:tL,cor:'#22d3ee'},{l:'Reuniões agendadas',v:tRA,cor:'#f5a94e'},{l:'Reuniões realizadas',v:tRR,cor:'#22c55e'},{l:'Vendas',v:tV,cor:'#ef4444'}];
+  var maxV=funil[0].v||1;
+  funil.forEach(function(s,i){
+    var barW=Math.max(s.v/maxV*100, s.v>0?3:0);
+    var pctTot=(s.v/maxV*100).toFixed(2)+'%';
+    var pctPrev=i===0?'100.00%':(s.v>0&&funil[i-1].v>0?pct(s.v/funil[i-1].v*100):'—');
+    h += '<div class="com-funil-step">'
+      +'<div class="com-funil-label">'+s.l+'</div>'
+      +'<div class="com-funil-bar-wrap"><div class="com-funil-bar" style="width:'+barW+'%;background:'+s.cor+'"><span style="font-size:12px;font-weight:700;color:#06110f;">'+s.v.toLocaleString('pt-BR')+'</span></div></div>'
+      +'<div class="com-funil-num">'+pctTot+'</div>'
+      +'<div class="com-funil-pct">'+(i===0?'do total':pctPrev+' do anterior')+'</div>'
+      +'</div>';
+  });
   h += '</div></div>';
 
+  // Tabela diária editável
+  var temEdits=Object.keys(lvEdits).length>0;
+  h += '<div class="tc"><div class="tc-header"><div class="tc-header-left"><div class="ct">Registros do período</div><div class="edit-hint"><i class="ti ti-pencil" style="font-size:12px"></i> Clique em qualquer valor para editar</div></div>';
+  h += '<div class="tc-actions">';
+  if(temEdits) h += '<button class="btn-outline" onclick="limparEdits()"><i class="ti ti-trash" style="font-size:13px"></i> Limpar edições</button>';
+  h += '<button class="btn-primary" onclick="exportarTSV()"><i class="ti ti-copy" style="font-size:13px"></i> Copiar para Sheets</button>';
+  h += '</div></div>';
   h += '<table class="dt"><thead><tr><th>Data</th><th>Leads</th><th>Qualificados</th><th>Reun. ag.</th><th>Reun. feitas</th><th>Vendas</th><th>Observações</th></tr></thead><tbody>';
-
-  lv.forEach(function(r) {
-    var d = String(r.Data||'');
-    var ed = lvEdits[d] || {};
-    var hasEdit = !!lvEdits[d];
-
-    function inp(campo, val, width) {
-      var v = val===''||val===null||val===undefined ? '' : val;
-      var changed = hasEdit && lvEdits[d][campo] !== undefined ? ' changed' : '';
-      return '<input class="cell-input'+changed+'" data-date="'+d+'" data-campo="'+campo+'"'
-        +' value="'+(v||'')+'" type="'+(campo==='obs'?'text':'number')+'"'
-        +' min="0" style="width:'+(width||60)+'px"'
-        +' onchange="salvarCelula(\''+d+'\',\''+campo+'\',this.value)"'
-        +' oninput="salvarCelula(\''+d+'\',\''+campo+'\',this.value)">';
+  lv.forEach(function(r){
+    var d=String(r.Data||''); var ed=lvEdits[d]||{}; var hasEdit=!!lvEdits[d];
+    function inp(campo,val,width){
+      var v=val===''||val===null||val===undefined?'':val;
+      var changed=hasEdit&&lvEdits[d][campo]!==undefined?' changed':'';
+      return '<input class="cell-input'+changed+'" data-date="'+d+'" data-campo="'+campo+'" value="'+(v||'')+'" type="'+(campo==='obs'?'text':'number')+'" min="0" style="width:'+(width||60)+'px" onchange="salvarCelula(''+d+'',''+campo+'',this.value)" oninput="salvarCelula(''+d+'',''+campo+'',this.value)">';
     }
-
-    h += '<tr>'
-      +'<td class="date-cell">'+d+'</td>'
-      +'<td>'+inp('leads', r['Leads'])+'</td>'
-      +'<td>'+inp('qualif', r['Leads qualificados']||r['Qualificados'])+'</td>'
-      +'<td>'+inp('reunAg', r['Reuniões agendadas']||r['Reunioes agendadas'])+'</td>'
-      +'<td>'+inp('reunF', r['Reuniões feitas']||r['Reunioes feitas']||r['Reuniões realizadas'])+'</td>'
-      +'<td>'+inp('vendas', r['Vendas'])+'</td>'
-      +'<td class="obs-cell">'+inp('obs', r['Observações']||r['Observacoes']||'', 180)+'</td>'
-      +'</tr>';
+    h += '<tr><td class="date-cell">'+d+'</td><td>'+inp('leads',r['Leads'])+'</td><td>'+inp('qualif',r['Leads qualificados']||r['Qualificados'])+'</td><td>'+inp('reunAg',r['Reuniões agendadas']||r['Reunioes agendadas'])+'</td><td>'+inp('reunF',r['Reuniões feitas']||r['Reunioes feitas']||r['Reuniões realizadas'])+'</td><td>'+inp('vendas',r['Vendas'])+'</td><td class="obs-cell">'+inp('obs',r['Observações']||r['Observacoes']||'',180)+'</td></tr>';
   });
-
   h += '</tbody></table></div>';
+
   document.getElementById('ct-leads').innerHTML = h;
 }
 
